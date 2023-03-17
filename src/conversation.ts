@@ -64,16 +64,16 @@ export type ConversationFlavor<C extends Context | undefined = undefined> =
     & { conversation: ConversationControls }
     & (C extends Context
         // workaround for https://github.com/microsoft/TypeScript/issues/51111
-        ? C extends LazySessionFlavor<infer V> ? 
-                & Omit<C, "session">
-                & LazySessionFlavor<ConversationSessionData & V>
-        : 
-            & C
-            & SessionFlavor<ConversationSessionData>
+        ? C extends LazySessionFlavor<infer V> ?
+        & Omit<C, "session">
+        & LazySessionFlavor<ConversationSessionData & V>
+        :
+        & C
+        & SessionFlavor<ConversationSessionData>
         // TODO: remove additive flavor for 2.0
-        : 
-            | SessionFlavor<ConversationSessionData>
-            | LazySessionFlavor<ConversationSessionData>);
+        :
+        | SessionFlavor<ConversationSessionData>
+        | LazySessionFlavor<ConversationSessionData>);
 
 interface Internals {
     /** Known conversation identifiers, used for collision checking */
@@ -242,7 +242,7 @@ class ConversationControls {
      */
     public async exit(id?: string) {
         const session = await this[internal].session();
-        if (session.conversation === undefined) return;
+        if (!session.conversation) return;
         if (id === undefined) {
             // Simply clear all conversation data
             session.conversation = undefined;
@@ -472,7 +472,7 @@ export function conversations<C extends Context>(): MiddlewareFn<
         await next();
         if (transformed) {
             const session = await ctx.session;
-            if (session.conversation !== undefined) {
+            if (!session.conversation) {
                 session.conversation = listify(
                     session.conversation,
                     KNOWN_TYPES,
@@ -615,7 +615,7 @@ export function createConversation<C extends Context>(
         } finally {
             // Clean up if no conversations remain
             if (
-                session.conversation !== undefined &&
+                session.conversation &&
                 Object.keys(session.conversation).length === 0
             ) {
                 session.conversation = undefined;
@@ -815,7 +815,7 @@ export class ConversationHandle<C extends Context> {
             this.data.log.u[this.replayIndex.wait - 1].a?.[method][index];
         this.replayIndex.api?.set(method, 1 + index);
         if (result === undefined) {
-            return new Promise<never>(() => {});
+            return new Promise<never>(() => { });
         }
         return this._resolveAt(result.i, result.r);
     }
@@ -829,7 +829,7 @@ export class ConversationHandle<C extends Context> {
         if (index === undefined) this.replayIndex.ext = index = 0;
         const result = this.data.log.u[this.replayIndex.wait - 1].e?.[index];
         this.replayIndex.ext = 1 + index;
-        if (result === undefined) return new Promise<never>(() => {});
+        if (result === undefined) return new Promise<never>(() => { });
         return this._resolveAt(result.i, result.r);
     }
     /**
@@ -921,7 +921,7 @@ export class ConversationHandle<C extends Context> {
             ) {
                 // conversation expired, leave it
                 this.rsr.resolve({ consumed: false, exit: true });
-                await new Promise<never>(() => {});
+                await new Promise<never>(() => { });
             }
             return ctx;
         }
@@ -929,7 +929,7 @@ export class ConversationHandle<C extends Context> {
         // and resume middleware execution normally outside of the conversation
         this.rsr.resolve({ consumed: true, exit: false });
         // Intercept function execution
-        await new Promise<never>(() => {}); // BOOM
+        await new Promise<never>(() => { }); // BOOM
         // deno-lint-ignore no-explicit-any
         return 0 as any; // dead code
     }
@@ -1127,7 +1127,7 @@ export class ConversationHandle<C extends Context> {
         // and resume middleware execution normally outside of the conversation
         this.rsr.resolve({ consumed: drop, exit: false });
         // Intercept function execution
-        return await new Promise<never>(() => {}); // BOOM
+        return await new Promise<never>(() => { }); // BOOM
     }
 
     /**
